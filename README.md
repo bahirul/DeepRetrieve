@@ -17,6 +17,12 @@ DeepRetrieve is a Retrieval-Augmented Generation (RAG)-based system designed to 
 
 ## Usage
 
+- Setup the configuration file
+    ```bash
+    cp config.yml.example config.yml
+    ```
+- Update the configuration file with the required information
+    - Note: The `ollama` section is optional and can be left empty if you don't want to use the LLM model for processing the documents.
 - Store the documents in ChromaDB
     ```bash
     python3.12 store.py
