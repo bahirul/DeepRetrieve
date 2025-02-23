@@ -1,0 +1,17 @@
+# Configuration file for the project
+
+chromadb:
+  path: ./chromadb
+  collection: all_documents
+  dim: 1024
+  n_results: 5
+
+text:
+  chunk_size: 5
+
+embedding:
+  model: sentence-transformers/all-MiniLM-L6-v2
+
+ollama:
+  api_url: "http://localhost:11434"
+  model: "deepseek-r1"
