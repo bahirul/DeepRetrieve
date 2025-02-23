@@ -55,24 +55,23 @@ async def main():
     )
 
     # check if no documents found
-    if len(results["documents"]) == 0:
-        print("No documents found.")
-        sys.exit(1)
+    if len(results["documents"][0]) > 0:
+        # reranking the documents
+        if config["reranking"]["enabled"]:
+            # CrossEncoder reranking
+            reranking_model = CrossEncoder(config["reranking"]["model"])
+            scores = reranking_model.predict(
+                [(query, doc) for doc in results["documents"][0]]
+            )
 
-    # reranking the documents
-    if config["reranking"]["enabled"]:
-        # CrossEncoder reranking
-        reranking_model = CrossEncoder(config["reranking"]["model"])
-        scores = reranking_model.predict(
-            [(query, doc) for doc in results["documents"][0]]
-        )
-
-        # Sort results based on scores in descending order
-        sorted_indices = np.argsort(scores)[::-1]
-        reranked_docs = [results["documents"][0][i] for i in sorted_indices]
+            # Sort results based on scores in descending order
+            sorted_indices = np.argsort(scores)[::-1]
+            reranked_docs = [results["documents"][0][i] for i in sorted_indices]
+        else:
+            # No reranking
+            reranked_docs = results["documents"][0]
     else:
-        # No reranking
-        reranked_docs = results["documents"][0]
+        reranked_docs = ["No relevant documents found."]
 
     # retrieve the documents
     document_results = reranked_docs
