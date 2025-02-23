@@ -4,24 +4,23 @@ Extract text from documents and store them in ChromaDB using embeddings.
 
 ```mermaid
 flowchart TD
-    A[Start] --> B[Setup nltk resources]
-    B --> C[Load configuration from config.yml]
-    C --> D{Configuration file found?}
-    D -->|No| E[Print error and exit]
-    D -->|Yes| F[Ask for document path]
-    F --> G[Validate document path]
-    G --> H{Is path valid?}
-    H -->|No| I[Print error and exit]
-    H -->|Yes| J[Extract text from file]
-    J --> K[Chunk text]
-    K --> L[Setup ChromaDB client]
-    L --> M[Get or create collection]
-    M --> N[Initialize embedding model]
-    N --> O[Iterate over text chunks]
-    O --> P[Generate embeddings for chunk]
-    P --> Q[Add chunk to collection]
-    Q --> R{More chunks?}
-    R -->|Yes| O
-    R -->|No| S[Print success message]
-    S --> T[End]
+    A[Start] --> B[Load configuration from config.yml]
+    B --> C{Configuration file found?}
+    C -->|No| D[Print error and exit]
+    C -->|Yes| E[Ask for document path]
+    E --> F[Validate document path]
+    F --> G{Is path valid?}
+    G -->|No| H[Print error and exit]
+    G -->|Yes| I[Extract text from file]
+    I --> J[Chunk text]
+    J --> K[Setup ChromaDB client]
+    K --> L[Get or create collection]
+    L --> M[Initialize embedding model]
+    M --> N[Iterate over text chunks]
+    N --> O[Generate embeddings for chunk]
+    O --> P[Add chunk to collection]
+    P --> Q{More chunks?}
+    Q -->|Yes| N
+    Q -->|No| R[Print success message]
+    R --> S[End]
 ```

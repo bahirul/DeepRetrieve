@@ -4,24 +4,13 @@ import os
 import sys
 import uuid
 
-import chromadb
-import nltk
 import tqdm
 import yaml
 from sentence_transformers import SentenceTransformer
 
+import chromadb
 from utils.doc_util import extract_text_from_file
-from utils.text_util import chunk_text
-
-
-def nltk_download():
-    """Download NLTK resources"""
-    try:
-        nltk.data.find("tokenizers/punkt")
-        nltk.data.find("tokenizers/punkt_tab")
-    except LookupError:
-        nltk.download("punkt")
-        nltk.download("punkt_tab")
+from utils.text_util import nltk_chunk_text
 
 
 def validate_file_path(file_path: str) -> bool:
@@ -42,10 +31,7 @@ def validate_file_path(file_path: str) -> bool:
 
 def main():
     """Main function"""
-
-    # setup nltk resources and load configuration
-    nltk_download()
-
+    # Load configuration
     try:
         with open("config.yml", "r", encoding="utf-8") as file:
             config = yaml.safe_load(file)
@@ -57,32 +43,43 @@ def main():
     pdf_path = input("Enter file path of the document [pdf, txt, markdown]: ")
 
     # validate document path
+    pdf_path = pdf_path.strip()
     if not validate_file_path(pdf_path):
         sys.exit(1)
 
     # Extract text from file
     text = extract_text_from_file(pdf_path)
 
-    # Tokenize and Chunk text
-    chunks = chunk_text(text, chunk_size=config["text"]["chunk_size"])
+    # Chunk text
+    chunks = nltk_chunk_text(
+        text,
+        chunk_size=config["text"]["chunk_text_size"],
+        overlap=config["text"]["chunk_text_overlap"],
+    )
 
     # Store in ChromaDB
-    chroma_client = chromadb.PersistentClient(
-        path=config["chromadb"]["path"]
-    )  # Persistent storage
+    chroma_client = chromadb.PersistentClient(path=config["chromadb"]["path"])
+
+    # Persistent storage
     collection = chroma_client.get_or_create_collection(
         name=config["chromadb"]["collection"],
         metadata={"dimentionality": config["chromadb"]["dim"]},
     )
 
-    embedding_model = SentenceTransformer(config["embedding"]["model"])
+    # Embed chunks
+    embedding_model = SentenceTransformer(
+        config["embedding"]["model"],
+        trust_remote_code=config["embedding"]["trust_remote_code"],
+    )
     for _, chunk in enumerate(tqdm.tqdm(chunks, desc="Storing chunks to ChromaDB")):
         embedding = embedding_model.encode(chunk).tolist()
         collection.add(
             documents=[chunk], embeddings=[embedding], ids=[str(uuid.uuid4())]
         )
 
-    print(f"✅ Stored {len(chunks)} chunks in ChromaDB.")
+    print(
+        f"{'✅' if len(chunks) > 0 else '⚠️'} Stored {len(chunks)} chunks in ChromaDB."
+    )
 
 
 if __name__ == "__main__":

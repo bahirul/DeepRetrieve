@@ -3,9 +3,10 @@
 import asyncio
 import sys
 
+import numpy as np
 import yaml
 from ollama import AsyncClient
-from sentence_transformers import SentenceTransformer
+from sentence_transformers import CrossEncoder, SentenceTransformer
 
 import chromadb
 
@@ -44,7 +45,10 @@ async def main():
     )
 
     # search for the query
-    embedding_model = SentenceTransformer(config["embedding"]["model"])
+    embedding_model = SentenceTransformer(
+        config["embedding"]["model"],
+        trust_remote_code=config["embedding"]["trust_remote_code"],
+    )
     results = collection.query(
         query_embeddings=[embedding_model.encode(query)],
         n_results=config["chromadb"]["n_results"],  # get the top 5 results
@@ -55,8 +59,23 @@ async def main():
         print("No documents found.")
         sys.exit(1)
 
+    # reranking the documents
+    if config["reranking"]["enabled"]:
+        # CrossEncoder reranking
+        reranking_model = CrossEncoder(config["reranking"]["model"])
+        scores = reranking_model.predict(
+            [(query, doc) for doc in results["documents"][0]]
+        )
+
+        # Sort results based on scores in descending order
+        sorted_indices = np.argsort(scores)[::-1]
+        reranked_docs = [results["documents"][0][i] for i in sorted_indices]
+    else:
+        # No reranking
+        reranked_docs = results["documents"][0]
+
     # retrieve the documents
-    document_results = results["documents"][0]
+    document_results = reranked_docs
 
     # process to ollama
     if len(document_results) > 0:
@@ -85,15 +104,23 @@ async def chat(host: str, model: str, documents: list[str], query: str):
     client = AsyncClient(host=host)
 
     prompt = f"""
-    Based on the following retrieved context: 
+    Task:
+    Answer the following question based only on the knowledge provided below.
 
-    {"\n".join(documents) if documents else "No context available."}
+    {("\n".join(documents) if documents else "No relevant knowledge is available.")}
 
+    Question:
+    {query}
 
+    Instructions:
+    - Use only the information provided above to answer the question.
+    - Do not assume or add information beyond what is given.
+    - If the information is insufficient, say that you don't have enough knowledge to answer.
+    - Ensure clarity, coherence, and completeness in your response.
+    - Avoid yes/no answers unless explicitly asked.
 
-    Answer the following question: 
-
-    {query}"""
+    Now, provide a well-structured response:
+    """
 
     # Send to the LLM model
     messages = [

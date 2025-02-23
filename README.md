@@ -2,9 +2,8 @@
 
 DeepRetrieve is a Retrieval-Augmented Generation (RAG)-based system designed to efficiently retrieve, analyze, and compare information from various documents. Leveraging vector search technology and Large Language Models (LLMs).
 
-## Demo Preview
+## Preview
 [![asciicast](https://asciinema.org/a/704910.svg)](https://asciinema.org/a/704910)
-
 
 ## Setup Instructions
 

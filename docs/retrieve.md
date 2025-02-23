@@ -17,13 +17,19 @@ flowchart TD
     K --> L[Search for the query]
     L --> M{Documents found?}
     M -->|No| N[Print no documents found and exit]
-    M -->|Yes| O[Retrieve the documents]
-    O --> P{Ollama API URL and model configured?}
-    P -->|No| Q[Print documents manually]
-    P -->|Yes| R[Process documents to LLM model]
-    R --> S[Chat with the LLM model]
-    S --> T[End]
-    Q --> T
-    N --> T
-    D --> T
+    M -->|Yes| O{Reranking enabled?}
+    O -->|Yes| P[CrossEncoder reranking]
+    O -->|No| Q[No reranking]
+    P --> R[Sort results based on scores]
+    R --> S[Retrieve the documents]
+    Q --> S
+    S --> T{Ollama API URL and model configured?}
+    T -->|No| U[Print documents manually]
+    T -->|Yes| V[Process documents to LLM model]
+    V --> W[Chat with the LLM model]
+    W --> X[End]
+    U --> X
+    N --> X
+    H --> X
+    D --> X
 ```
